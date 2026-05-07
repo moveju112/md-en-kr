@@ -1,0 +1,25 @@
+{
+  "name": "md-en-kr",
+  "version": "0.1.0",
+  "description": "Compress Korean rule/MD files into compact English to reduce token usage. Works in Claude Code and Codex CLI.",
+  "author": {
+    "name": "moveju112",
+    "email": "move@wemadeconnect.com"
+  },
+  "homepage": "https://github.com/moveju112/md-en-kr",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/moveju112/md-en-kr.git"
+  },
+  "keywords": [
+    "skill",
+    "compression",
+    "korean",
+    "english",
+    "markdown",
+    "rules",
+    "claude-code",
+    "codex-cli"
+  ],
+  "license": "MIT"
+}
