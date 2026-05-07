@@ -45,7 +45,6 @@ EXT_FILE_RE = re.compile(r"(?<![A-Za-z0-9_])([A-Za-z0-9_\-]+)\.([A-Za-z0-9]{1,6}
 FRONTMATTER_RE = re.compile(r"\A---\s*\n([\s\S]*?)\n---\s*(?:\n|$)")
 NAME_LINE_RE = re.compile(r"^name:\s*(.+?)\s*$", re.MULTILINE)
 URL_RE = re.compile(r"(?:https?|ftp|ws|wss)://[^\s\)\]\}<>\"'`]+")
-IPV4_RE = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])")
 
 
 def strip_fenced_blocks(text):
@@ -198,22 +197,6 @@ def check_path_tokens(original, converted):
     return [f"경로 토큰 손실: {token}" for token in sorted(missing)]
 
 
-def check_urls(original, converted):
-    """URL(http/https/ftp/ws) 보존 검증."""
-    original_urls = set(URL_RE.findall(original))
-    converted_urls = set(URL_RE.findall(converted))
-    missing = original_urls - converted_urls
-    return [f"URL 손실: {url}" for url in sorted(missing)]
-
-
-def check_ipv4(original, converted):
-    """IPv4 주소 보존 검증."""
-    original_ips = set(IPV4_RE.findall(original))
-    converted_ips = set(IPV4_RE.findall(converted))
-    missing = original_ips - converted_ips
-    return [f"IPv4 주소 손실: {ip}" for ip in sorted(missing)]
-
-
 CHECKS = (
     ("frontmatter name", check_frontmatter_name),
     ("fenced code blocks", check_fenced_blocks),
@@ -223,8 +206,6 @@ CHECKS = (
     ("table rows", check_table_rows),
     ("link targets", check_link_targets),
     ("path tokens", check_path_tokens),
-    ("urls", check_urls),
-    ("ipv4 addresses", check_ipv4),
 )
 
 

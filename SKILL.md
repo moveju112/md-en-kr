@@ -161,10 +161,8 @@ Exit code 0 = pass; non-zero = fail with reasons on stderr. The script enforces:
 6. **Markdown table data row counts** preserved.
 7. **Link targets** in `[text](target)` preserved.
 8. **Path-like tokens** outside backticks preserved. Path-like = starts with `/`, `./`, `../`, `~/`, or matches `<name>.<ext>` where `<ext>` is a known file extension. (Tokens already inside backticks are covered by check #3.)
-9. **URLs** — every unique `http(s)://`, `ftp://`, `ws(s)://` URL from the original appears in the output.
-10. **IPv4 addresses** — every unique IPv4 from the original appears in the output.
 
-The script does NOT enforce: byte-ratio targets (those are mode-specific guidelines, not invariants), Korean-trigger-phrase-without-backticks preservation, hostname preservation, IPv6 preservation. The agent is responsible for honoring those §Rules manually.
+The script does NOT enforce: byte-ratio targets (those are mode-specific guidelines, not invariants), Korean-trigger-phrase-without-backticks preservation, URL preservation, IP/hostname preservation. The agent is responsible for honoring those §Rules manually.
 
 If the script fails, regenerate (up to 3 attempts). On the 3rd failure, abort that file and surface the script's stderr to the user. Do not show a failing diff and do not auto-apply.
 

@@ -57,7 +57,7 @@ git clone https://github.com/moveju112/md-en-kr.git ~/.codex/skills/md-en-kr
    - 모드 결정 (`--mode` 우선, 없으면 경로 추론)
    - 모드별 강조점에 따라 압축 규칙 적용해 영어 버전 생성
    - **자가 검증 스크립트** 실행 (`python3 scripts/verify_md_conversion.py`)
-     - 10개 항목 검증: frontmatter `name`, fenced/inline 코드, heading 시퀀스, 체크리스트 개수, 테이블 행, 링크 target, 경로 토큰, URL, IPv4
+     - 8개 항목 검증: frontmatter `name`, fenced/inline 코드, heading 시퀀스, 체크리스트 개수, 테이블 행, 링크 target, 경로 토큰
    - **diff 정책** (아래 표 참고)
 3. 처리 결과 요약 (적용 N개, 건너뜀 M개, 검증 실패 K개, 모드별 비율, 총 바이트 비율). git-untracked/ignored 처리 파일도 표시.
 
