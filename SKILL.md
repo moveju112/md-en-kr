@@ -21,6 +21,7 @@ Compress Korean Markdown rule files into compact English while preserving every 
 - Glob: expand via shell.
 - Directory: collect all `*.md` recursively, excluding hidden directories (`.git`, `.venv`, `node_modules`, etc.).
 - If the resolved list is empty, abort with a clear message.
+- If the resolved list contains non-`.md` files, abort and list them. Only `.md` files are supported.
 
 ### 2. Pre-flight check (MUST pass before any conversion)
 
@@ -93,6 +94,7 @@ Report: applied N, skipped M, aborted? Include a length-ratio estimate per file 
 - Translate Korean values into English (notably `description`).
 - NEVER change the `name` value or any other identifier-like value.
 - If a value is already English or non-text (boolean, number, list of identifiers), leave it.
+- If the file has no frontmatter, skip this subsection's rules entirely.
 
 ### Safety wording
 
@@ -126,7 +128,7 @@ After producing the compressed output, the agent MUST verify before showing the 
 4. Frontmatter `name` value is unchanged.
 5. The required-Korean phrases listed in §Rules → Core are still present verbatim.
 
-If any check fails, regenerate. Do not surface a failing diff to the user.
+If any check fails, regenerate (up to 3 attempts). If checks still fail on the third attempt, abort that file with a message listing which check failed and why. Do not surface a failing diff to the user.
 
 ## Output writing
 
