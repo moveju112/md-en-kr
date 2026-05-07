@@ -23,24 +23,7 @@ Compress Korean Markdown rule files into compact English while preserving every 
 - If the resolved list is empty, abort with a clear message.
 - If the resolved list contains non-`.md` files, abort and list them. Only `.md` files are supported.
 
-### 2. Pre-flight check (MUST pass before any conversion)
-
-Run these checks inline. Abort the entire run if any fail.
-
-```bash
-git rev-parse --is-inside-work-tree
-```
-
-For each target file:
-
-```bash
-git ls-files --error-unmatch <file>            # tracked?
-git status --porcelain <file>                  # clean? (must produce empty output)
-```
-
-If any file is untracked or has uncommitted changes, list those files and abort. Reason: overwriting requires `git checkout` as the rollback path.
-
-### 3. Per-file processing (sequential)
+### 2. Per-file processing (sequential)
 
 For each file in the resolved list:
 
@@ -51,9 +34,9 @@ For each file in the resolved list:
 5. Ask the user: `apply / skip / abort`.
    - `apply`: overwrite the original file with the compressed content.
    - `skip`: leave the file unchanged, continue to the next file.
-   - `abort`: stop the run. Already-applied files remain (recoverable via git).
+   - `abort`: stop the run. Already-applied files remain unchanged.
 
-### 4. Summary
+### 3. Summary
 
 Report: applied N, skipped M, aborted? Include a length-ratio estimate per file (e.g., `42% of original`).
 
@@ -133,7 +116,7 @@ If any check fails, regenerate (up to 3 attempts). If checks still fail on the t
 ## Output writing
 
 - Overwrite the original file with the compressed content on `apply`.
-- Do not write any other file (no `.bak`, no sibling). Rollback path is `git checkout <file>`.
+- Do not write any other file (no `.bak`, no sibling). The diff preview before `apply` is the user's last chance to back out.
 
 ## Out of Scope
 

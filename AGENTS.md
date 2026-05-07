@@ -9,7 +9,6 @@ When the user invokes `/compress-rule <path>` or asks to compress/translate Kore
 - Read `SKILL.md` in this directory before acting.
 - Follow §Procedure step by step.
 - Apply §Rules and §Self-Verification without modification.
-- NEVER skip the pre-flight git-clean check.
 - NEVER overwrite a file without showing the diff and getting `apply` from the user.
 
 ## Activation triggers
