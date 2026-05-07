@@ -70,7 +70,7 @@ Report: applied N, skipped M, aborted? Include a length-ratio estimate per file 
 - Safety / destructive-action warnings
 - Architecture constraints
 - Coding conventions
-- Korean phrases that are themselves part of the rule (e.g., `일반 말투`, `stop caveman`, `/graphify`)
+- Quoted/inline-code phrases that are themselves part of the rule — typically phrases inside `` ` `` backticks that match user trigger words or required wording (e.g., `일반 말투`, `stop caveman`, `/graphify`)
 
 ### Compression behavior
 
@@ -122,7 +122,7 @@ After producing the compressed output, the agent MUST verify before showing the 
 
 1. Every file path token from the original (any string containing `/`) appears in the output.
 2. Every fenced code block from the original is present with identical content.
-3. Every inline-code token (`` `...` ``) from the original appears in the output.
+3. Every unique inline-code token (`` `...` ``) from the original appears at least once in the output.
 4. Frontmatter `name` value is unchanged.
 5. The required-Korean phrases listed in §Rules → Core are still present verbatim.
 
