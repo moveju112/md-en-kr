@@ -45,6 +45,8 @@ EXT_FILE_RE = re.compile(r"(?<![A-Za-z0-9_])([A-Za-z0-9_\-]+)\.([A-Za-z0-9]{1,6}
 FRONTMATTER_RE = re.compile(r"\A---\s*\n([\s\S]*?)\n---\s*(?:\n|$)")
 NAME_LINE_RE = re.compile(r"^name:\s*(.+?)\s*$", re.MULTILINE)
 URL_RE = re.compile(r"(?:https?|ftp|ws|wss)://[^\s\)\]\}<>\"'`]+")
+PAREN_COUNT_RE = re.compile(r"\((\d+\+?)\)")
+PLUS_COUNT_RE = re.compile(r"(?<![A-Za-z0-9_])(\d+\+)(?!\d)")
 
 
 def strip_fenced_blocks(text):
@@ -197,6 +199,33 @@ def check_path_tokens(original, converted):
     return [f"경로 토큰 손실: {token}" for token in sorted(missing)]
 
 
+def extract_count_quantifiers(text):
+    """fenced/inline code를 제외한 영역에서 정량 한정자 토큰을 추출.
+
+    탐지 대상:
+      - 괄호 카운트: (22), (30+)
+      - 더하기 카운트: 30+, 100+ (앞뒤가 식별자/숫자가 아닐 때)
+
+    이런 토큰들은 보통 "개수/규모"를 명시한 사실값으로, 압축 시
+    실수로 떨어뜨리면 의미가 손실된다.
+    """
+    cleaned = strip_inline_code(strip_fenced_blocks(text))
+    quants = set()
+    for match in PAREN_COUNT_RE.finditer(cleaned):
+        quants.add(f"({match.group(1)})")
+    for match in PLUS_COUNT_RE.finditer(cleaned):
+        quants.add(match.group(1))
+    return quants
+
+
+def check_count_quantifiers(original, converted):
+    """정량 한정자 (N), (N+), N+ 보존 검증."""
+    original_quants = extract_count_quantifiers(original)
+    converted_quants = extract_count_quantifiers(converted)
+    missing = original_quants - converted_quants
+    return [f"정량 한정자 손실: {token}" for token in sorted(missing)]
+
+
 CHECKS = (
     ("frontmatter name", check_frontmatter_name),
     ("fenced code blocks", check_fenced_blocks),
@@ -206,6 +235,7 @@ CHECKS = (
     ("table rows", check_table_rows),
     ("link targets", check_link_targets),
     ("path tokens", check_path_tokens),
+    ("count quantifiers", check_count_quantifiers),
 )
 
 

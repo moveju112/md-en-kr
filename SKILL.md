@@ -71,10 +71,23 @@ When multiple patterns match, prefer `rule` over `plan` over `reference`.
 ### Mode-Specific Behavior
 
 - **`rule`** — behavioral instructions are sacred. Preserve every MUST/NEVER/required-language rule verbatim. Strong wording (`MUST`, `NEVER`, `under no circumstances`) MUST stay strong. Trim only meta-prose around rules. **Target ratio: 60–85% of original.**
-- **`reference`** — facts, definitions, structural descriptions can be aggressively deduplicated and condensed. Trim narrative and examples. Lists and tables stay. **Target ratio: 40–70% of original.**
+- **`reference`** — facts, definitions, structural descriptions can be deduplicated and condensed. Trim *narrative and examples only*. **NEVER drop named technical entities (controllers, models, libraries, services, handlers, packages, classes, modules referenced by name), counts/quantifiers (`(22)`, `30+`, `~180ms`, `5GB`), package purposes ("for S3 CDN upload"), subsystem roles, or comma-separated identifier lists.** A reference doc with low narrative density (directory trees, named-entity enumerations, count tables) typically compresses to 60–80%, not 40–70% — do NOT chase the lower bound by stripping facts. **Target ratio: 40–70% of original** (60–80% for fact-dense / structured-prose docs).
 - **`plan`** — TODOs, checklists (`- [x]` / `- [ ]`), file paths, dates, owners, acceptance criteria are sacred. Prose around them can be heavily compressed; bullets ≪ paragraphs. **Target ratio: 30–50% of original.**
 
-Targets are guidelines. **Meaning preservation always wins over hitting a ratio.** If hitting the target would lose a rule, miss the target.
+Targets are guidelines. **Meaning preservation always wins over hitting a ratio.** If hitting the target would lose a rule, fact, or named entity, miss the target.
+
+### Structured-prose detection (reference mode)
+
+A reference doc is **structured-prose** when it has:
+- Zero or ≤2 `#`/`##` headings, AND
+- Multiple comma-separated identifier enumerations (`A, B, C, D, E`), OR
+- Frequent parenthetical counts (`(22)`, `(30+)`), OR
+- Inline directory/file tree-like enumerations (`foo/bar.php, foo/baz.php, ...`)
+
+In structured-prose mode:
+- Treat every named identifier as preservation-critical (like inline-code).
+- Treat every `(N)` / `(N+)` / `N+` quantifier as preservation-critical.
+- Use the upper end of the ratio band (60–80%); never go below 60%.
 
 ### Core (preserve exactly)
 
@@ -91,6 +104,8 @@ Targets are guidelines. **Meaning preservation always wins over hitting a ratio.
 - Quoted/inline-code phrases that are themselves part of the rule — typically phrases inside `` ` `` backticks that match user trigger words or required wording (e.g., `일반 말투`, `stop caveman`, `/graphify`)
 - **Korean trigger phrases referenced verbatim** — even if the source text shows them WITHOUT backticks. If the document says `사용자가 "X"라고 말하면` or otherwise references a Korean phrase as a literal trigger, keep that phrase in Korean unchanged in the output.
 - **Numeric codes** — HTTP status codes, error codes, enum values, version numbers (`200`, `4xx`, `v1.2.3`).
+- **Quantitative qualifiers** — counts and magnitudes attached to entities, regardless of mode: `(22)`, `(30+)`, `30+`, `~100ms`, `180초`, `5GB`. Drop these and the document becomes a vague approximation of itself.
+- **Named technical entities** — controller / model / library / service / handler / package / class / module / function / table / column names referenced by name. Even in reference mode, do NOT replace `Auth, User, Mission, Payment, ...` with "various controllers" or `(22 controllers)` alone.
 - **Enum / range values** — `[0, 100]`, `1..10`, `0..=255` and similar ranges.
 - **SQL keywords and identifiers** — table, column, schema, database, view names; SQL keywords inside SQL contexts.
 - **URLs** — `http://`, `https://`, `ftp://`, `ws://`, `wss://` and similar protocol-prefixed URLs.
@@ -161,8 +176,9 @@ Exit code 0 = pass; non-zero = fail with reasons on stderr. The script enforces:
 6. **Markdown table data row counts** preserved.
 7. **Link targets** in `[text](target)` preserved.
 8. **Path-like tokens** outside backticks preserved. Path-like = starts with `/`, `./`, `../`, `~/`, or matches `<name>.<ext>` where `<ext>` is a known file extension. (Tokens already inside backticks are covered by check #3.)
+9. **Count quantifiers** — `(N)`, `(N+)`, and bare `N+` patterns from the original each appear in the output. Catches cases like `Src/Controller(22)` collapsing to `Src/Controller` during over-aggressive compression.
 
-The script does NOT enforce: byte-ratio targets (those are mode-specific guidelines, not invariants), Korean-trigger-phrase-without-backticks preservation, URL preservation, IP/hostname preservation. The agent is responsible for honoring those §Rules manually.
+The script does NOT enforce: byte-ratio targets (those are mode-specific guidelines, not invariants), Korean-trigger-phrase-without-backticks preservation, URL preservation, IP/hostname preservation, named-technical-entity preservation, comma-list cardinality. The agent is responsible for honoring those §Rules manually.
 
 If the script fails, regenerate (up to 3 attempts). On the 3rd failure, abort that file and surface the script's stderr to the user. Do not show a failing diff and do not auto-apply.
 
