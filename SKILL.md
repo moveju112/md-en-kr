@@ -9,14 +9,15 @@ Compress Korean Markdown rule files into compact English while preserving every 
 
 ## Activation
 
-- Slash command: `/compress-rule <path>`
+- Slash command: `/compress-rule [--apply] <path>`
 - Natural language: "이 한글 rule 파일들 영어로 압축해줘", "compress these korean rules"
 - Targets: single `.md` file, glob (`rules/*.md`), or directory (recursive)
 
 ## Procedure
 
 ### 1. Argument parsing
-- Resolve the user-provided argument into a concrete file list.
+- Resolve the user-provided argument into a concrete file list and an `auto_apply` boolean.
+- `auto_apply` is true when the invocation contains `--apply`, a standalone `apply` token, or natural-language phrasing such as "승인 없이", "그냥 적용", "auto apply", "no prompt". Default is false.
 - Single file: use as-is.
 - Glob: expand via shell.
 - Directory: collect all `*.md` recursively, excluding hidden directories (`.git`, `.venv`, `node_modules`, etc.).
@@ -29,16 +30,18 @@ For each file in the resolved list:
 
 1. Read the original file.
 2. Apply the compression rules in §Rules to produce the English version.
-3. Run the self-verification in §Self-Verification on the produced output. If any check fails, regenerate.
-4. Show a unified diff (original vs. compressed) to the user.
-5. Ask the user: `apply / skip / abort`.
-   - `apply`: overwrite the original file with the compressed content.
-   - `skip`: leave the file unchanged, continue to the next file.
-   - `abort`: stop the run. Already-applied files remain unchanged.
+3. Write the candidate output to a temporary path (e.g., `/tmp/<basename>.converted.md`).
+4. Run the §Self-Verification script against the temporary path. On failure, regenerate (up to 3 attempts; abort that file on the third failure with the script's stderr).
+5. Branch on `auto_apply`:
+   - **`auto_apply=true`**: overwrite the original directly with the verified content. No diff, no prompt. Continue.
+   - **`auto_apply=false` (default)**: show a unified diff (original vs. compressed) and ask the user `apply / skip / abort`.
+     - `apply`: overwrite the original file with the compressed content.
+     - `skip`: leave the file unchanged, continue to the next file.
+     - `abort`: stop the run. Already-applied files remain unchanged.
 
 ### 3. Summary
 
-Report: applied N, skipped M, aborted? Include a length-ratio estimate per file (e.g., `42% of original`).
+Report: applied N, skipped M, aborted? Include a length-ratio estimate per file (e.g., `42% of original`). For runs of 4+ files, also print a total-bytes ratio.
 
 ## Rules
 
@@ -103,15 +106,24 @@ Extend this mapping consistently within a single file.
 
 ## Self-Verification
 
-After producing the compressed output, the agent MUST verify before showing the diff:
+After producing the compressed output and writing it to a temporary path, the agent MUST run the bundled verification script before either showing the diff or auto-applying:
 
-1. Every file path token from the original (any string containing `/`) appears in the output.
-2. Every fenced code block from the original is present with identical content.
-3. Every unique inline-code token (`` `...` ``) from the original appears at least once in the output.
-4. Frontmatter `name` value is unchanged.
-5. The required-Korean phrases listed in §Rules → Core are still present verbatim.
+```bash
+python3 scripts/verify_md_conversion.py <original-path> <converted-tmp-path>
+```
 
-If any check fails, regenerate (up to 3 attempts). If checks still fail on the third attempt, abort that file with a message listing which check failed and why. Do not surface a failing diff to the user.
+Exit code 0 = pass; non-zero = fail with reasons on stderr. The script enforces:
+
+1. **Frontmatter `name` unchanged** (when frontmatter exists).
+2. **Fenced code blocks** (` ``` ` blocks) preserved 1:1 in count and content.
+3. **Unique inline-code tokens** (`` `...` ``) from the original each appear at least once in the output.
+4. **Heading level sequence** identical (e.g., `[1, 2, 2, 3]`).
+5. **Checklist counts** for `- [x]` and `- [ ]` preserved separately.
+6. **Markdown table data row counts** preserved.
+7. **Link targets** in `[text](target)` preserved.
+8. **Path-like tokens** outside backticks preserved. Path-like = starts with `/`, `./`, `../`, `~/`, or matches `<name>.<ext>` where `<ext>` is a known file extension. (Tokens already inside backticks are covered by check #3.)
+
+If the script fails, regenerate (up to 3 attempts). On the 3rd failure, abort that file and surface the script's stderr to the user. Do not show a failing diff and do not auto-apply.
 
 ## Output writing
 
@@ -122,5 +134,4 @@ If any check fails, regenerate (up to 3 attempts). If checks still fail on the t
 
 - Reverse direction (English → Korean).
 - Non-`.md` files.
-- Auto-applying without per-file approval.
 - External LLM/API calls — the calling agent (Claude Code or Codex CLI) performs the conversion itself.

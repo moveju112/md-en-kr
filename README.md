@@ -28,19 +28,23 @@ git clone https://github.com/moveju112/md-en-kr.git ~/.codex/skills/md-en-kr
 /compress-rule path/to/rule.md
 /compress-rule path/to/dir/
 /compress-rule "rules/*.md"
+/compress-rule --apply rules/*.md       # 승인 없이 일괄 적용
 ```
 
 자연어로도 호출할 수 있습니다:
 
 > 이 한글 rule 파일들 영어로 압축해줘: rules/*.md
+> 위 파일들 승인 없이 그냥 적용해줘
 
 ## 동작
 
-1. 인자(파일 / 글롭 / 디렉토리)를 파일 목록으로 확장합니다.
+1. 인자(파일 / 글롭 / 디렉토리 + 선택적 `--apply`)를 파일 목록으로 확장합니다.
 2. 파일별로:
    - 압축 규칙을 적용해 영어 버전 생성
-   - 변환 결과 자가 검증 (경로 / 코드블록 / 인라인 코드 / frontmatter 보존 확인)
-   - **diff 미리보기**를 보여주고 `apply / skip / abort` 선택
+   - **자가 검증 스크립트** 실행 (`python3 scripts/verify_md_conversion.py`)
+     - frontmatter `name`, fenced/inline 코드, heading 시퀀스, 체크리스트, 테이블 행, 링크 target, 경로 토큰 보존 검증
+   - 기본 모드: **diff 미리보기**를 보여주고 `apply / skip / abort` 선택
+   - `--apply` 모드: 검증 통과 시 즉시 덮어쓰기 (diff/프롬프트 생략)
 3. 처리 결과 요약 (적용 N개, 건너뜀 M개, 길이 비율).
 
 ## 보존 항목 (절대 변경하지 않음)
@@ -59,10 +63,11 @@ git clone https://github.com/moveju112/md-en-kr.git ~/.codex/skills/md-en-kr
 
 ## 안전
 
-- 모든 파일은 덮어쓰기 직전에 **diff 미리보기 + `apply` 승인**을 거칩니다.
+- 기본 모드는 모든 파일이 덮어쓰기 직전에 **diff 미리보기 + `apply` 승인**을 거칩니다.
+- `--apply` 모드는 사용자 승인 없이 자동 적용하므로, **자가 검증 스크립트 통과**가 유일한 안전망입니다. 중요한 파일은 사용 전 버전 관리 또는 별도 백업을 권장합니다.
+- 자가 검증이 3회 연속 실패한 파일은 그대로 두고 (덮어쓰지 않음) 다음 파일로 넘어갑니다.
 - `skip`을 선택한 파일은 변경되지 않습니다.
 - `abort`로 중단해도 이미 `apply`된 파일은 그대로 유지됩니다 (이전 파일은 영향 없음).
-- 중요한 파일은 변환 전에 **버전 관리 또는 별도 백업**을 권장합니다.
 
 ## 비범위
 

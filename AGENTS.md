@@ -16,4 +16,5 @@ When the user invokes `/compress-rule <path>` or asks to compress/translate Kore
 - `/compress-rule <path>`
 - `/compress-rule <dir>`
 - `/compress-rule "<glob>"`
-- Natural language: "한글 룰 압축", "rule 영어 변환", "compress korean rules"
+- `/compress-rule --apply <path>` — skip per-file confirmation, auto-apply on verify pass
+- Natural language: "한글 룰 압축", "rule 영어 변환", "compress korean rules", "승인 없이 적용"
