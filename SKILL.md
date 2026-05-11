@@ -1,16 +1,17 @@
 ---
 name: md-en-kr
-description: Use when compressing Korean rule/MD files into compact English to reduce token usage. Triggers on "/compress-rule", "한글 룰 압축", "rule 영어 변환" requests, or when working with Korean .md rule files in skills/rules directories.
+description: Use when compressing Korean rule/MD files into compact English to reduce token usage, or when adding a user-specified Korean rule to a project rule file during conversion. Triggers on "/compress-rule", "한글 룰 압축", "rule 영어 변환", "프로젝트 rule에 ... 추가" requests, or when working with Korean .md rule files in skills/rules directories.
 ---
 
 # md-en-kr
 
-Compress Korean Markdown rule files into compact English while preserving every behaviorally meaningful instruction. Overwrites originals after user approval.
+Compress Korean Markdown rule files into compact English while preserving every behaviorally meaningful instruction. Can also inject a user-specified Korean rule as compact English. Overwrites originals after user approval.
 
 ## Activation
 
-- Slash command: `/compress-rule [--apply] [--mode=rule|reference|plan] <path>`
+- Slash command: `/compress-rule [--apply] [--mode=rule|reference|plan] [--add-rule "<Korean rule>"] <path>`
 - Natural language: "이 한글 rule 파일들 영어로 압축해줘", "compress these korean rules"
+- Rule injection: "이 프로젝트의 rule에 md-en-kr을 이용해서 X라는 내용을 추가해줘"
 - Targets: single `.md` file, glob (`rules/*.md`), or directory (recursive)
 
 ## Procedure
@@ -20,11 +21,14 @@ Compress Korean Markdown rule files into compact English while preserving every 
   - **file list** (single / glob / directory).
   - **`auto_apply`** (bool): true when the invocation contains `--apply`, a standalone `apply` token, or natural-language phrasing such as "승인 없이", "그냥 적용", "auto apply", "no prompt". Default false.
   - **`mode_override`**: one of `rule | reference | plan` if the user passes `--mode=X` or equivalent. If absent, mode is inferred per file (see §Mode Inference). The override applies to all files in the run.
+  - **`additional_rules`** (list): Korean rule text from `--add-rule "<rule>"`, repeated `--add-rule` flags, or natural-language patterns like "X라는 내용을 추가", "X 라는 내용을 추가", "X rule을 추가", "X 규칙을 추가". Default empty.
+- Project-rule aliases: if the target is omitted and the user says "this project rule", "프로젝트 rule", "프로젝트 룰", or "이 프로젝트의 rule", walk upward from the current working directory and resolve the file list to the nearest `AGENTS.md`, then `CLAUDE.md`, then `GEMINI.md`. If none exists, abort and ask for an explicit `.md` path.
 - Single file: use as-is.
 - Glob: expand via shell.
 - Directory: collect all `*.md` recursively, excluding hidden directories (`.git`, `.venv`, `node_modules`, etc.).
 - If the resolved list is empty, abort with a clear message.
 - If the resolved list contains non-`.md` files, abort and list them. Only `.md` files are supported.
+- If `additional_rules` is non-empty and a target file would not infer to `rule`, abort unless the user explicitly passes `--mode=rule`. Rule injection is only valid for rule-mode processing.
 - File collection is glob-based; `.gitignore` and `.git/info/exclude` are NOT consulted. Files that are git-untracked or git-ignored ARE still processed. Note such files in the summary so the user knows they may not appear in `git status`.
 
 ### 2. Per-file processing (sequential)
@@ -33,9 +37,10 @@ For each file in the resolved list:
 
 1. Read the original file. Determine `effective_mode`: `mode_override` if set, otherwise inferred per §Mode Inference.
 2. Apply the compression rules in §Rules with mode-specific emphasis from §Mode-Specific Behavior to produce the English version.
-3. Write the candidate output to a temporary path (e.g., `/tmp/<basename>.converted.md`).
-4. Run the §Self-Verification script against the temporary path. On failure, regenerate (up to 3 attempts; abort that file on the third failure with the script's stderr).
-5. Branch per §Diff Policy below.
+3. If `additional_rules` is non-empty, convert each added Korean rule to a compact English rule and insert it per §Rule Injection.
+4. Write the candidate output to a temporary path (e.g., `/tmp/<basename>.converted.md`).
+5. Run the §Self-Verification script against the temporary path. On failure, regenerate (up to 3 attempts; abort that file on the third failure with the script's stderr).
+6. Branch per §Diff Policy below.
 
 ### 3. Diff Policy
 
@@ -51,6 +56,7 @@ In all modes, files that fail verification 3 times are left untouched and listed
 
 Always print:
 - Per file: applied / skipped / failed-verification, mode used, byte ratio (e.g., `42% of original`).
+- Injected rule count per file when `additional_rules` is non-empty.
 - Total: applied N, skipped M, failed K, aggregate byte ratio.
 - Note any files that were git-ignored or git-untracked (visible to the run but not to `git status`).
 
@@ -88,6 +94,17 @@ In structured-prose mode:
 - Treat every named identifier as preservation-critical (like inline-code).
 - Treat every `(N)` / `(N+)` / `N+` quantifier as preservation-critical.
 - Use the upper end of the ratio band (60–80%); never go below 60%.
+
+### Rule Injection
+
+When `additional_rules` is non-empty:
+- Translate each added Korean rule into compact English with rule-mode strictness.
+- Preserve mandatory force: "반드시", "해야 한다", "하지 말아줘/말아야 한다", "금지" map to `MUST`, `MUST NOT`, or `NEVER` as appropriate.
+- Preserve all numeric limits, units, protocol terms, identifiers, trigger phrases, and quoted/backticked text exactly unless the quoted text is ordinary Korean prose.
+- Prefer short bullets, e.g. "프로토콜의 key는 5글자를 넘기지 말아줘" -> `- Protocol keys MUST be <=5 chars.`
+- Insert added rules under the most relevant existing rule section (`## Rules`, `# Rules`, `## Coding Conventions`, `## Instructions`, or equivalent). If no rule-like heading exists, append bullets to the end of the file.
+- Do not add, remove, or rename headings solely for inserted rules; heading-level sequence must remain compatible with §Self-Verification.
+- Do not deduplicate away an added rule unless an equivalent rule already exists with equal or stronger wording. If equivalent, keep the stronger existing wording and report `0 injected (already covered)`.
 
 ### Core (preserve exactly)
 
@@ -178,7 +195,7 @@ Exit code 0 = pass; non-zero = fail with reasons on stderr. The script enforces:
 8. **Path-like tokens** outside backticks preserved. Path-like = starts with `/`, `./`, `../`, `~/`, or matches `<name>.<ext>` where `<ext>` is a known file extension. (Tokens already inside backticks are covered by check #3.)
 9. **Count quantifiers** — `(N)`, `(N+)`, and bare `N+` patterns from the original each appear in the output. Catches cases like `Src/Controller(22)` collapsing to `Src/Controller` during over-aggressive compression.
 
-The script does NOT enforce: byte-ratio targets (those are mode-specific guidelines, not invariants), Korean-trigger-phrase-without-backticks preservation, URL preservation, IP/hostname preservation, named-technical-entity preservation, comma-list cardinality. The agent is responsible for honoring those §Rules manually.
+The script does NOT enforce: byte-ratio targets (those are mode-specific guidelines, not invariants), Korean-trigger-phrase-without-backticks preservation, URL preservation, IP/hostname preservation, named-technical-entity preservation, comma-list cardinality, or semantic correctness of `additional_rules`. The agent is responsible for honoring those §Rules manually.
 
 If the script fails, regenerate (up to 3 attempts). On the 3rd failure, abort that file and surface the script's stderr to the user. Do not show a failing diff and do not auto-apply.
 

@@ -31,12 +31,14 @@ git clone https://github.com/moveju112/md-en-kr.git ~/.codex/skills/md-en-kr
 /compress-rule --apply rules/*.md                   # 승인 없이 일괄 적용
 /compress-rule --mode=plan docs/plans/              # 명시적 모드 지정
 /compress-rule --apply --mode=reference docs/       # 두 옵션 조합
+/compress-rule --add-rule "프로토콜의 key는 5글자를 넘기지 말아줘" AGENTS.md
 ```
 
 자연어로도 호출할 수 있습니다:
 
 > 이 한글 rule 파일들 영어로 압축해줘: rules/*.md
 > 위 파일들 승인 없이 그냥 적용해줘
+> 이 프로젝트의 rule에 md-en-kr을 이용해서 프로토콜의 key는 5글자를 넘기지 말아줘 라는 내용을 추가해줘
 
 ## 문서 타입별 모드
 
@@ -52,12 +54,13 @@ git clone https://github.com/moveju112/md-en-kr.git ~/.codex/skills/md-en-kr
 
 ## 동작
 
-1. 인자(파일 / 글롭 / 디렉토리 + 선택적 `--apply` + 선택적 `--mode=X`)를 파일 목록으로 확장합니다.
+1. 인자(파일 / 글롭 / 디렉토리 + 선택적 `--apply` + 선택적 `--mode=X` + 선택적 `--add-rule`)를 파일 목록으로 확장합니다.
 2. 파일별로:
    - 모드 결정 (`--mode` 우선, 없으면 경로 추론)
    - 모드별 강조점에 따라 압축 규칙 적용해 영어 버전 생성
+   - 선택적 추가 rule을 영어 compact bullet로 변환해 기존 rule 섹션에 삽입
    - **자가 검증 스크립트** 실행 (`python3 scripts/verify_md_conversion.py`)
-     - 8개 항목 검증: frontmatter `name`, fenced/inline 코드, heading 시퀀스, 체크리스트 개수, 테이블 행, 링크 target, 경로 토큰
+     - 9개 항목 검증: frontmatter `name`, fenced/inline 코드, heading 시퀀스, 체크리스트 개수, 테이블 행, 링크 target, 경로 토큰, count quantifier
    - **diff 정책** (아래 표 참고)
 3. 처리 결과 요약 (적용 N개, 건너뜀 M개, 검증 실패 K개, 모드별 비율, 총 바이트 비율). git-untracked/ignored 처리 파일도 표시.
 
@@ -90,6 +93,18 @@ git clone https://github.com/moveju112/md-en-kr.git ~/.codex/skills/md-en-kr
 - 네트워크 식별자 (IPv4, IPv6, hostname, domain, port)
 - Mermaid / PlantUML / ASCII diagram 블록 내용
 - 체크리스트 상태 (`- [x]` / `- [ ]`)와 항목 수
+
+## 새 rule 추가
+
+`--add-rule "<한글 rule>"` 또는 자연어 "X라는 내용을 추가" 요청을 쓰면, 대상 rule 파일을 영어로 압축하면서 새 rule도 compact English bullet로 삽입합니다.
+
+예:
+
+```md
+- Protocol keys MUST be <=5 chars.
+```
+
+"이 프로젝트의 rule"처럼 경로가 생략된 요청은 현재 디렉토리에서 위로 올라가며 가장 가까운 `AGENTS.md`를 우선 대상으로 사용하고, 없으면 `CLAUDE.md`, `GEMINI.md` 순서로 찾습니다.
 
 ## 예시
 
