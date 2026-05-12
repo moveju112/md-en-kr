@@ -140,7 +140,8 @@ When `additional_rules` is non-empty:
 
 ### Markdown handling
 
-- Preserve heading levels exactly. Do not renumber or restructure.
+- Preserve every heading as a Markdown heading with the same level and order. Do not renumber or restructure.
+- NEVER convert headings to ordered lists (`1.`, `1.1.`, `1)`), bullets, bold text, or plain paragraphs. Heading text may be translated/compacted; the `#` marker shape must remain.
 - Preserve link/image targets: `[text](path)` — translate `text`, leave `path` untouched.
 - NEVER translate content inside inline code (`` ` ``) or fenced code blocks (```` ``` ````). They contain identifiers/commands.
 - Code blocks count and content must match the original 1:1.
@@ -188,7 +189,7 @@ Exit code 0 = pass; non-zero = fail with reasons on stderr. The script enforces:
 1. **Frontmatter `name` unchanged** (when frontmatter exists).
 2. **Fenced code blocks** (` ``` ` blocks) preserved 1:1 in count and content.
 3. **Unique inline-code tokens** (`` `...` ``) from the original each appear at least once in the output.
-4. **Heading level sequence** identical (e.g., `[1, 2, 2, 3]`).
+4. **Heading level sequence** identical (e.g., `[1, 2, 2, 3]`), with diagnostics for headings converted to numbered lists.
 5. **Checklist counts** for `- [x]` and `- [ ]` preserved separately.
 6. **Markdown table data row counts** preserved.
 7. **Link targets** in `[text](target)` preserved.

@@ -60,7 +60,7 @@ git clone https://github.com/moveju112/md-en-kr.git ~/.codex/skills/md-en-kr
    - 모드별 강조점에 따라 압축 규칙 적용해 영어 버전 생성
    - 선택적 추가 rule을 영어 compact bullet로 변환해 기존 rule 섹션에 삽입
    - **자가 검증 스크립트** 실행 (`python3 scripts/verify_md_conversion.py`)
-     - 9개 항목 검증: frontmatter `name`, fenced/inline 코드, heading 시퀀스, 체크리스트 개수, 테이블 행, 링크 target, 경로 토큰, count quantifier
+     - 9개 항목 검증: frontmatter `name`, fenced/inline 코드, heading 시퀀스 및 번호 목록 변환 진단, 체크리스트 개수, 테이블 행, 링크 target, 경로 토큰, count quantifier
    - **diff 정책** (아래 표 참고)
 3. 처리 결과 요약 (적용 N개, 건너뜀 M개, 검증 실패 K개, 모드별 비율, 총 바이트 비율). git-untracked/ignored 처리 파일도 표시.
 
@@ -93,6 +93,7 @@ git clone https://github.com/moveju112/md-en-kr.git ~/.codex/skills/md-en-kr
 - 네트워크 식별자 (IPv4, IPv6, hostname, domain, port)
 - Mermaid / PlantUML / ASCII diagram 블록 내용
 - 체크리스트 상태 (`- [x]` / `- [ ]`)와 항목 수
+- Markdown heading marker (`#`, `##`, `###` 등)와 heading level/order
 
 ## 새 rule 추가
 

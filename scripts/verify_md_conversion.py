@@ -35,6 +35,10 @@ KNOWN_EXTENSIONS = {
 FENCED_BLOCK_RE = re.compile(r"```[\s\S]*?```", re.MULTILINE)
 INLINE_CODE_RE = re.compile(r"`([^`\n]+)`")
 HEADING_RE = re.compile(r"^(#{1,6})\s+\S", re.MULTILINE)
+ORDERED_HEADING_CANDIDATE_RE = re.compile(
+    r"^[ \t]*(?:\d+(?:\.\d+)*\.?|\d+\))[ \t]+\S[^\n]*",
+    re.MULTILINE,
+)
 CHECKLIST_DONE_RE = re.compile(r"^[ \t]*-[ \t]+\[[xX]\]", re.MULTILINE)
 CHECKLIST_TODO_RE = re.compile(r"^[ \t]*-[ \t]+\[ \]", re.MULTILINE)
 LINK_TARGET_RE = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)\)")
@@ -110,16 +114,26 @@ def check_inline_code(original, converted):
 
 
 def check_heading_sequence(original, converted):
-    """heading 레벨 시퀀스 동일성 검증."""
+    """heading 레벨 시퀀스 동일성 및 번호 목록 변환 징후 검증."""
     original_no_fence = strip_fenced_blocks(original)
     converted_no_fence = strip_fenced_blocks(converted)
     original_levels = [len(m) for m in HEADING_RE.findall(original_no_fence)]
     converted_levels = [len(m) for m in HEADING_RE.findall(converted_no_fence)]
     if original_levels != converted_levels:
-        return [
+        issues = [
             f"heading 레벨 시퀀스 불일치: "
             f"original={original_levels}, converted={converted_levels}"
         ]
+        ordered_heading_candidates = [
+            match.group(0).strip()[:80]
+            for match in ORDERED_HEADING_CANDIDATE_RE.finditer(converted_no_fence)
+        ]
+        if ordered_heading_candidates:
+            preview = "; ".join(
+                repr(candidate) for candidate in ordered_heading_candidates[:5]
+            )
+            issues.append(f"heading이 번호 목록으로 변환된 것으로 보임: {preview}")
+        return issues
     return []
 
 
